@@ -1,74 +1,73 @@
-import React from "react";
-import "./Home.css"; // Import the CSS file
 import { useState } from "react";
+import './Home.css'
 
 export default function Home() {
-    const [portraits, setPortaits]= useState([]);
-    const [candids, setCandids]= useState([])
-    const [name,setNameP]= useState("Upload Portraits")
-    const [nameC, setnameC]= useState("Upload Candids")
+    const [portraitZip, setPortraitZip] = useState(null);
+    const [candidZip, setCandidZip] = useState(null);
+    const [error, setError] = useState("");
 
-    const handleFolder =(e,isPortrait) =>{
-      if(isPortrait==true){
-        setPortaits(Array.from(e.target.files))
-        setNameP("Portaits Uploaded Successfully")
-        // call API here using these files 
-      }
-      else{
-        setCandids(Array.from(e.target.files))
-        setnameC("Candids Uploaded Successfully")
-      }
-    }
-
-    const uploadFiles = async () => {
-      const formData = new FormData();
-      console.log(portraits)
-      portraits.forEach((file) => {
-        formData.append("portraits", file);
-      });
-      candids.forEach((file) => {
-        formData.append("candids", file);
-      });
-  
-      try {
-        const response = await fetch("http://localhost:8000/sendFiles", {
-          method: "POST",
-          body: formData,
-        });
-        const result = await response.json();
-        alert(result.message);
-      } catch (error) {
-        console.error("Upload failed:", error);
-        alert("File upload failed!");
-      }
+    const handleFileChange = (e, isPortrait) => {
+        const file = e.target.files[0];
+        if (file && file.name.endsWith(".zip")) {
+            setError("");
+            if (isPortrait) {
+                setPortraitZip(file);
+            } else {
+                setCandidZip(file);
+            }
+        } else {
+            setError("Only .zip files are allowed!");
+        }
     };
 
-   
-  return (
-    <div className="yearbook-container">
-      <div className="background-image"></div>
-      <div className="upload-card">
-        <h1 className="title">Rethink your yearbook</h1>
-        <p className="subtitle">Upload your portraits and candids to get started!</p>
-        <div className="upload-box">
-          <label className="upload-label">
-            {name}
-            <input type="file" webkitdirectory="true" directory multiple className="hidden-input"
-             onChange={e=>handleFolder(e, true)}
-            />
-          </label>
+    const uploadFiles = async () => {
+        if (!portraitZip || !candidZip) {
+            setError("Please upload both portrait and candid zip files.");
+            return;
+        }
 
-          <label className="upload-label">
-            {nameC}
-            <input type="file" webkitdirectory="true" directory multiple className="hidden-input" 
-            onChange={e=>handleFolder(e, false)}
-            />
-          </label>
-          <button className="upload-btn" onClick={uploadFiles}>
-          Upload Files
-        </button>
+        const formData = new FormData();
+        formData.append("portrait_zip", portraitZip);
+        formData.append("candids_zip", candidZip);
+
+        try {
+            const response = await fetch("http://localhost:5000/upload", {
+                method: "POST",
+                body: formData,
+            });
+            const result = await response.json();
+            alert(result.message);
+        } catch (error) {
+            console.error("Upload failed:", error);
+            alert("File upload failed!");
+        }
+    };
+
+    return (
+        <div className="yearbook-container">
+            <div className="background-image"></div>
+            <div className="upload-card">
+                <h1 className="title">Rethink your yearbook</h1>
+                <p className="subtitle">Upload your portraits and candids to get started!</p>
+                {error && <p className="error-message">{error}</p>}
+                <div className="upload-box">
+                    <label className="upload-label">
+                        Upload Portraits (.zip)
+                        <input type="file" accept=".zip" className="hidden-input"
+                            onChange={e => handleFileChange(e, true)}
+                        />
+                    </label>
+                    <label className="upload-label">
+                        Upload Candids (.zip)
+                        <input type="file" accept=".zip" className="hidden-input"
+                            onChange={e => handleFileChange(e, false)}
+                        />
+                    </label>
+                    <button className="upload-btn" onClick={uploadFiles}>
+                        Upload Files
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
